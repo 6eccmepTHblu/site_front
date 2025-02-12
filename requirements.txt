@@ -4,3 +4,5 @@ uvicorn
 psycopg2-binary
 python-dotenv
 alembic
+apscheduler
+requests
