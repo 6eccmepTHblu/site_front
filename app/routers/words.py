@@ -1,10 +1,14 @@
-from typing import List
-
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 
 from db.database import dm
 from db.models import Word
+
+class WordUpdate(BaseModel):
+    id: int
+    selected: bool = True
+    repetition_count: int = 0
 
 router = APIRouter(
     prefix="/api/words",
@@ -52,19 +56,17 @@ def clear_selected_words():
 
 
 @router.post("/select-words")
-def select_words(words_to_update):
+def select_words(words_to_update: list = Body(...)):
     """Выбор слов и обновление их статуса"""
     updated_words = []
-    with dm.session_scope() as session:
-        for word_update in words_to_update:
-            word = session.query(Word).filter(Word.id == word_update.id).first()
-            if word:
-                for key, value in word_update.dict().items():
-                    setattr(word, key, value)
-                updated_words.append(word)
-            else:
-                raise HTTPException(status_code=404, detail=f"Word with id {word_update.id} not found")
-
-        session.commit()
+    for word_update in words_to_update:
+        word = dm.db_word.get(word_update['id'])
+        if word:
+            for key, value in word_update.items():
+                setattr(word, key, value)
+            word = dm.db_word.update(word)
+            updated_words.append(word)
+        else:
+            raise HTTPException(status_code=404, detail=f"Word with id {word_update.id} not found")
 
     return jsonable_encoder(updated_words)
