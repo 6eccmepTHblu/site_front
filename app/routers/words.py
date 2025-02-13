@@ -52,19 +52,19 @@ def clear_selected_words():
 
 
 @router.post("/select-words")
-def select_words(word_ids: List[int] = Body(...)):
-    """Выбор слов по списку ID"""
-    selected_words = []
+def select_words(words_to_update):
+    """Выбор слов и обновление их статуса"""
+    updated_words = []
     with dm.session_scope() as session:
-        for word_id in word_ids:
-            word = session.query(Word).filter(Word.id == word_id).first()
+        for word_update in words_to_update:
+            word = session.query(Word).filter(Word.id == word_update.id).first()
             if word:
-                word.selected = True
-                word.repetition_count = 0
-                selected_words.append(word)
+                for key, value in word_update.dict().items():
+                    setattr(word, key, value)
+                updated_words.append(word)
             else:
-                raise HTTPException(status_code=404, detail=f"Word with id {word_id} not found")
+                raise HTTPException(status_code=404, detail=f"Word with id {word_update.id} not found")
 
         session.commit()
 
-    return jsonable_encoder(selected_words)
+    return jsonable_encoder(updated_words)
