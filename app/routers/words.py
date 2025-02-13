@@ -60,7 +60,7 @@ def select_words(words_to_update: list = Body(...)):
     """Выбор слов и обновление их статуса"""
     updated_words = []
     for word_update in words_to_update:
-        word = dm.db_word.get(word_update['id'])
+        word = dm.db_word.get(word_update['id'], include_translations=True)
         if word:
             for key, value in word_update.items():
                 setattr(word, key, value)
