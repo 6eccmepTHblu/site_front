@@ -65,8 +65,8 @@ def select_words(words_to_update: list = Body(...)):
             for key, value in word_update.items():
                 setattr(word, key, value)
             word = dm.db_word.update(word)
-            updated_words.append(word)
+            updated_words.append(jsonable_encoder(word))
         else:
             raise HTTPException(status_code=404, detail=f"Word with id {word_update.id} not found")
 
-    return jsonable_encoder(updated_words)
+    return updated_words
