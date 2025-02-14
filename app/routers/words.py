@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
 
 from db.database import dm
 from db.models import Word
@@ -58,15 +59,23 @@ def clear_selected_words():
 @router.post("/select-words")
 def select_words(words_to_update: list = Body(...)):
     """Выбор слов и обновление их статуса"""
-    updated_words = []
-    for word_update in words_to_update:
-        word = dm.db_word.get(word_update['id'], include_translations=True)
-        if word:
-            for key, value in word_update.items():
-                setattr(word, key, value)
-            word = dm.db_word.update(word)
-            updated_words.append(jsonable_encoder(word))
-        else:
-            raise HTTPException(status_code=404, detail=f"Word with id {word_update.id} not found")
+    try:
+        with dm.session_scope() as session:
+            # Подготовка данных для массового обновления
+            update_data = [
+                {
+                    "id": word['id'],
+                    "selected": word.get('selected', True),
+                    "repetition_count": word.get('repetition_count', 0)
+                }
+                for word in words_to_update
+            ]
 
-    return updated_words
+            # Выполнение массового обновления
+            session.bulk_update_mappings(Word, update_data)
+
+            return {"message": "ОК"}
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
