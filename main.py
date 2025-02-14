@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import words
+from app.routers import settings
 from apscheduler.schedulers.background import BackgroundScheduler
 import requests
 
@@ -19,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(words.router)
+app.include_router(settings.router)
 
 # Функция для пинга сервера
 def ping_server():
